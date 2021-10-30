@@ -60,6 +60,26 @@ function connect() {
 }
 
 function updateTokensLeft() {
+
+    contract.methods
+      .totalSupply()
+      .call()
+      .then((result) => {
+        let nbLeft = initialSupply - parseInt(result);
+        if (nbLeft > 0) {
+          $(".tokens-left").text(
+            `${nbLeft.toLocaleString("en-US")} tokens left`
+          );
+        } else {
+          $(".tokens-left").text(`Sold out!`);
+          $(".mint button").hide();
+        }
+      })
+      .finally((_) => {
+        setTimeout(updateTokensLeft, 3000);
+      });
+
+
     contract.methods.totalSupply().call()
         .then((result) => {
             let nbLeft = initialSupply - parseInt(result);
@@ -96,6 +116,45 @@ function mintToken() {
       });
 }
 
+function updateToken() {
+  console.log(`Trying to buy one token.`);
+  $(".status-message").text(`Minting...`);
+  var tokenId = prompt("Enter the token ID you want to update screen");
+  if (!tokenId) {
+    alert('Token ID must provide!');
+  }
+
+  contract.methods.ownerOf(tokenId).call().then(function(owner) {
+    if (currentAccount.toLowerCase() != owner.toLowerCase()) {
+      alert("You are not the owner of this token");
+    } else {
+      const left = web3js.eth.abi.encodeParameter("uint256", leftCode);
+      const right = web3js.eth.abi.encodeParameter("uint256", rightCode);
+      contract.methods
+        .updateScreen(left, right, tokenId)
+        .send({ from: currentAccount, value: 0 })
+        .on("receipt", function (receipt) {
+          $(".status-message").html(
+            `<i class="fa fa-check"></i> Congrats! updateScreen success`
+          );
+          try {
+            gtag("event", "mint", {
+              event_category: "update",
+              event_label: receipt.transactionHash,
+            });
+          } catch (e) {}
+        })
+        .on("error", function (error) {
+          $(".status-message").html(
+            `<i class="fa fa-exclamation-circle"></i> updateScreen operation failed`
+          );
+        });
+    }
+  });
+  console.log('update', tokenId)
+  
+}
+
 $(document).ready(function () {
     if (window.ethereum == null) {
         $(".status-message").html(`<i class="fa fa-exclamation-circle"></i> MetaMask isn't installed`);
@@ -104,7 +163,8 @@ $(document).ready(function () {
         ethereum.on('chainChanged', () => { window.location.reload(); });
         ethereum.on('accountsChanged', handleAccountsChanged);
         setTimeout(connect, 500);
-        $(".mint button").click(mintToken);
+        $("#mint-btn").click(mintToken);
+        $("#update-btn").click(updateToken);
         start();
     }
 });

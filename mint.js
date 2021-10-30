@@ -82,6 +82,14 @@ function mintToken() {
       .send({from: currentAccount, value: price})
       .on("receipt", function(receipt) {
           $(".status-message").html(`<i class="fa fa-check"></i> Congrats!`);
+          try {
+              gtag("event", "mint", {
+                event_category: "success",
+                event_label: receipt.transactionHash,
+              });
+          } catch(e){
+
+          }
       })
       .on("error", function(error) {
           $(".status-message").html(`<i class="fa fa-exclamation-circle"></i> Mint operation failed`);

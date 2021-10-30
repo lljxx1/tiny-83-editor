@@ -4,6 +4,8 @@ let grid = [];
 let leftCode = null;
 let rightCode = null;
 
+window.paintConf = null
+
 $(document).ready(() => {
   for (let i = 0; i < H; i++) {
     $('#screen').append(`<tr data-i="${i}"></tr>`);
@@ -29,6 +31,13 @@ $(document).ready(() => {
     grid[row][cell] = !grid[row][cell];
     let nowStatus = grid[row][cell]; 
     cellDom.removeClass().addClass(nowStatus ? "on" : "off");
+    if (window.paintConf) {
+      if (nowStatus){
+        cellDom.css("background-color", "#" + window.paintConf.pixelColor);
+      }else{
+        cellDom.css("background-color", window.paintConf.screenColor);
+      }
+    } 
     updateCode();
   }
 

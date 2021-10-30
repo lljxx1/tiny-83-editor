@@ -59,6 +59,100 @@ function connect() {
         });
 }
 
+ function random(input, range) {
+    let BN = web3js.utils.BN;
+    return new BN(web3js.utils.keccak256(input)).mod(new BN(range)).toNumber();
+ }
+
+
+ let colors = {}
+colors.bg = ["ac8", "ebf", "9de", "df9", "dda", "ed9", "999", "89c"];
+colors.head = ["70d", "653", "90f", "2b7", "22d", "22d", "fd1", 
+"b91", "22d", "b91", "22d", "b91", "70d", "f80", "f80", "653", "22d", "f80", "70d", "22d", "653", "f80", "fd1", "70d", "653", "b91", "22d", "f80", "90f", "f80", 
+"f80", "90f", "653", "22d", "653", "b91"];
+colors.screen = ["f48", "ff0", "90f", "d00", "f48", "d60", "f48", "0f0", "90f", "d00", "90f", "00d", "ddd", "0f0", "90f", "0f0", "ddd", "0f0", "90f", "ff0", "d00", "d00", "d60", "0f0", "ff0", "d00", "ff0", "ff0", "d00", "0f0", "d60", "0f0", "90f", "90f", "d60", "0f0"];
+colors.pixels = ["661b36", "666600", "3d0066", "580000", "661b36", "582800", "661b36", "006600", "3d0066", "580000", "3d0066", "000058", "585858", "006600", "3d0066", "006600", "585858", "006600", "3d0066", "666600", "580000", "580000", "582800", "006600", "666600", "580000", "666600", "666600", "580000", "006600", "582800", "006600", "3d0066", "3d0066", "582800", "006600"];
+colors.legs = [
+  "00f",
+  "f48",
+  "d0d",
+  "f00",
+  "d0d",
+  "d0d",
+  "f80",
+  "ff0",
+  "f48",
+  "f0f",
+  "00f",
+  "f80",
+  "90f",
+  "f0f",
+  "f48",
+  "f48",
+  "f80",
+  "d0d",
+  "f0f",
+  "f00",
+  "f00",
+  "00f",
+  "00f",
+  "f48",
+  "f0f",
+  "f80",
+  "f80",
+  "f80",
+  "00f",
+  "f80",
+  "f80",
+  "f48",
+  "ff0",
+  "f0f",
+  "f0f",
+  "f48",
+];
+
+function updateColors(supply) {
+    // supply = 929;
+    contract.methods
+      .tokenURI(supply)
+      .call()
+      .then((result) => {
+        let metadata = atob(result.split("data:application/json;base64,")[1]);
+        console.log(
+          "result",
+          atob(result.split("data:application/json;base64,")[1])
+        );
+        if (metadata) {
+            metadata = JSON.parse(metadata);;
+            let screenColor = metadata.attributes.find(
+              (_) => _.trait_type == "Screen"
+            ).value;
+           
+            let screenOffset = colors.screen.indexOf(screenColor.replace('#', ''));
+            let pixelColor = colors.pixels[screenOffset];
+            $("td").css("background-color", screenColor);
+            console.log(screenOffset, pixelColor);
+            window.paintConf = {
+              pixelColor: pixelColor,
+              screenColor: screenColor,
+            };
+        }
+      });
+    // supply = 837
+    // let calc = {};
+    // calc.bg = random(web3js.utils.keccak256("BACKGROUND" + supply), 8);
+    // calc.head = random(web3js.utils.keccak256("HEAD" + supply), 36);
+    // calc.legs = random(web3js.utils.keccak256("LEGS" + supply), 36);
+    // calc.screen = random(web3js.utils.keccak256("SCREEN" + supply), 36);
+
+    // let tokenColors = {}
+    // tokenColors.bg = colors.bg[calc.bg]
+    // tokenColors.head = colors.head[calc.head];
+    // tokenColors.legs = colors.legs[calc.legs];
+    // tokenColors.screen = colors.screen[calc.screen];
+    console.log("supply", supply);
+}
+
 function updateTokensLeft() {
 
     contract.methods
@@ -66,6 +160,7 @@ function updateTokensLeft() {
       .call()
       .then((result) => {
         let nbLeft = initialSupply - parseInt(result);
+        updateColors(result);
         if (nbLeft > 0) {
           $(".tokens-left").text(
             `${nbLeft.toLocaleString("en-US")} tokens left`
@@ -75,22 +170,7 @@ function updateTokensLeft() {
           $(".mint button").hide();
         }
       })
-      .finally((_) => {
-        setTimeout(updateTokensLeft, 3000);
-      });
 
-
-    contract.methods.totalSupply().call()
-        .then((result) => {
-            let nbLeft = initialSupply - parseInt(result);
-            if (nbLeft > 0) {
-                $(".tokens-left").text(`${nbLeft.toLocaleString('en-US')} tokens left`);
-            } else {
-                $(".tokens-left").text(`Sold out!`);
-                $(".mint button").hide();
-            }
-        })
-        .finally(_ => { setTimeout(updateTokensLeft, 3000); });
 }
 
 function mintToken() {
@@ -158,7 +238,7 @@ function updateToken() {
 $(document).ready(function () {
     if (window.ethereum == null) {
         $(".status-message").html(`<i class="fa fa-exclamation-circle"></i> MetaMask isn't installed`);
-        $(".mint button").hide();
+        // $(".mint button").hide();
     } else {
         ethereum.on('chainChanged', () => { window.location.reload(); });
         ethereum.on('accountsChanged', handleAccountsChanged);
